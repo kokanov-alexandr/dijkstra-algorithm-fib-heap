@@ -1,8 +1,10 @@
 #include <fstream>
+#include <string>
 #include <iostream>
-#include <fstream>
 #include <vector>
+#include <algorithm>
 using namespace std;
+#define INF INT_MAX
 
 enum State {
     LABELED, UNLABELED, SCANNED
@@ -10,15 +12,13 @@ enum State {
 
 class Node;
 
-class Edge
-{
+class Edge {
 public:
     Node *tail;
     Node *head;
-    double length;
+    int length;
 
-    Edge(Node *tail, Node *head, double length)
-    {
+    Edge(Node *tail, Node *head, int length) {
         this->tail = tail;
         this->head = head;
         this->length = length;
@@ -26,18 +26,15 @@ public:
 
 };
 
-
 class Node {
 public:
     friend class FibonacciHeap;
     vector<Edge*> incoming_edges;
     vector<Edge*> outgoing_edges;
-
     Node *parent;
     Node *left;
     Node *right;
     Node *child;
-
     State state;
 public:
 
@@ -56,11 +53,12 @@ public:
 
 };
 
-int MaxSize = 1000;
+bool iter(Edge *a, Edge *b) {
+    return a->length < b->length;
+}
+
 class FibonacciHeap {
 private:
-
-    vector<Node*> rootListByRank = vector<Node*>(MaxSize);
 
     void DeleteAll(Node *heap) {
         if (heap != nullptr) {
@@ -87,12 +85,10 @@ private:
     }
 
     Node* Merge(Node *first, Node *second) {
-        if (first == nullptr) {
+        if (first == nullptr)
             return second;
-        }
-        if (second == nullptr) {
+        if (second == nullptr)
             return first;
-        }
         if (first->key > second->key) {
             Node* loc_elem = first;
             first = second;
@@ -146,8 +142,8 @@ private:
                     else {
                         elem->left->right = loc_elem;
                         elem->right->left = loc_elem;
-                        loc_elem->left = elem->left;
                         loc_elem->right = elem->right;
+                        loc_elem->left = elem->left;
                         AddChild(loc_elem, elem);
                         elem = loc_elem;
                     }
@@ -158,11 +154,17 @@ private:
                 trees[elem->degree] = elem;
             }
             elem = elem->right;
-            if (elem->key < min->key) {
-                min = elem;
-            }
+//            if (elem->key < min->key) {
+//                min = elem;
+//            }
         }
-        return elem;
+        Node *min_elem = elem, *start = elem;
+        do {
+            if (elem->value < min_elem->value)
+                min_elem = elem;
+            elem = elem->right;
+        } while (elem != start);
+        return min_elem;
     }
 
     Node* DecreaseKey(Node *heap, Node *elem, int key) {
@@ -170,7 +172,7 @@ private:
             return heap;
         }
         elem->key = key;
-        if (elem->parent) {
+        if (elem->parent != nullptr) {
             if (elem->key < elem->parent->key) {
                 heap = Cut(heap, elem);
                 Node* parent = elem->parent;
@@ -186,11 +188,9 @@ private:
                 }
             }
         }
-        else {
-            if (elem->key < heap->key) {
+        else if (elem->key < heap->key)
                 heap = elem;
-            }
-        }
+
         return heap;
     }
 
@@ -290,10 +290,9 @@ public:
     }
 
     Node *DecreaseKey(Node *elem, int value) {
-        if (elem != nullptr) {
-            return min = DecreaseKey(min, elem, value);
-        }
-        return elem;
+        if (elem == nullptr)
+            return elem;
+        return min = DecreaseKey(min, elem, value);
     }
 
     void DisplayRoots() {
@@ -319,95 +318,98 @@ public:
     }
 
     static void Dijkstra() {
-        vector<Node*> vertices;
-        vector<Edge*> edges;
-        ifstream input("C:\\Users\\HP\\CLionProjects\\dijkstra-algorithm-fibonacci-heap\\Graph.txt");
-        if (input) {
-            int n;
-            input >> n;
-            for (int i = 0; i < n; ++i) {
-                vertices.push_back(MakeNode(i, 0));
+
+        int COUNT_TESTS = 9;
+        ifstream input, answer;
+        ofstream output("Tests\\out.txt");
+        ifstream output_2("Tests\\out.txt");
+
+        for (int number_test = 1; number_test <= 9; ++number_test) {
+            input.open("Tests\\input\\in" + to_string(number_test) + ".txt");
+            answer.open("Tests\\answer\\ans"  + to_string(number_test) + ".txt");
+
+            int count_vertexes, count_edge, start, tail, head, length;
+            input >> count_vertexes >> count_edge >> start;
+
+            vector<Node*> vertices(count_vertexes + 1);
+            vector<Edge*> edges(count_edge);
+
+            for (int i = 1; i <= count_vertexes; ++i) {
+                vertices[i] = (MakeNode(i, INF));
             }
 
-            while (!input.eof()) {
-                int tail, head, length;
+
+
+            vertices[start]->key = 0;
+            for (int i = 0; i < count_edge; ++i) {
                 input >> tail >> head >> length;
                 Edge* edge = new Edge(vertices[tail], vertices[head], length);
-                edge->head->AddIncomingEdge(edge);
                 edge->tail->AddOutgoingEdge(edge);
-                edges.push_back(edge);
+                edge->head->AddIncomingEdge(edge);
+                edges[i] = edge;
             }
-        }
 
-        else {
-            cout << "File will not Find!\n";
-        }
+            vertices[start]->state = LABELED;
+            FibonacciHeap FibHeap =  FibonacciHeap();
 
-        int start, finish;
-        cout << "\nEnter the first vertex: ";
-        cin >> start;
-        cout << "\nEnter the second vertex: ";
-        cin >> finish;
+            FibHeap.Insert(vertices[start]);
 
-        vertices.push_back(MakeNode(start, 0));
-        vertices[finish]->state = LABELED;
-        FibonacciHeap FibHeap =  FibonacciHeap();
+            for (int i = 1; i < vertices.size(); ++i) {
+                sort(vertices[i]->incoming_edges.begin(), vertices[i]->incoming_edges.end(), iter);
+                sort(vertices[i]->outgoing_edges.begin(), vertices[i]->outgoing_edges.end(), iter);
+            }
 
-        FibHeap.Insert(vertices[finish]);
+            do {
+                Node* v = FibHeap.RemoveMin();
+                v->state = SCANNED;
+                for (int i = 0; i < v->outgoing_edges.size(); i++) {
+                    Edge* currentEdge = v->outgoing_edges[i];
+                    Node* headOfCurrentEdge = currentEdge->head;
 
-        do
-        {
-            FibHeap.DisplayRoots();
-            Node* v = FibHeap.RemoveMin();
-            v->state = SCANNED;
-
-            for(int i = 0; i < v->incoming_edges.size(); i++)
-            {
-                Edge* currentEdge = v->incoming_edges[i];
-                Node* headOfCurrentEdge = currentEdge->tail;
-
-                if(headOfCurrentEdge->state != SCANNED)
-                {
-                    if(headOfCurrentEdge->state == UNLABELED)
-                    {
+                    if (headOfCurrentEdge->state == SCANNED) {
+                        continue;
+                    }
+                    if (headOfCurrentEdge->state == UNLABELED) {
                         headOfCurrentEdge->state = LABELED;
-                        headOfCurrentEdge->right = v;
                         headOfCurrentEdge->key = v->key + currentEdge->length;
                         FibHeap.Insert(headOfCurrentEdge);
                     }
-                    else if(headOfCurrentEdge->key > v->key + currentEdge->length )
-                    {
-                        headOfCurrentEdge->right = v;
+                    else if (headOfCurrentEdge->key > v->key + currentEdge->length) {
                         FibHeap.DecreaseKey(headOfCurrentEdge, v->key + currentEdge->length);
                     }
+                    vertices[v->value] = v;
                 }
             }
+            while(!FibHeap.isEmpty());
+
+            for (int i = 1; i < vertices.size(); ++i) {
+                if (vertices[i]->key != 2147483647) {
+                    output << vertices[i]->key << " ";
+                }
+                else output << "-1 ";
+            }
+            output << endl;
+
+            string input_ans, corr_ans;
+            getline(output_2, input_ans);
+            getline(answer, corr_ans);
+
+            if (input_ans == corr_ans) {
+                system("color 02" );
+                cout << "OK" << endl;
+            }
+            else {
+                system("color 04" );
+                cout << "ERROR" << endl;
+            }
+            input.close();
+            answer.close();
         }
-        while(!FibHeap.isEmpty());
-
-        Node* temp = vertices[start];
+        output.close();
 
 
-        if(!temp->right)
-        {
-            printf("There exist no s-t paths\n");
-            return;
-        }
-
-        int vertexCount = 0;
-
-        printf("\nDistance: %d\n", (int)vertices[start]->key);
-
-        while(temp)
-        {
-            cout << temp->value;
-            temp = temp->right;
-            if(temp)
-                printf(" -> ");
-
-            vertexCount++;
-        }
     }
+
 };
 
 int InputInt() {
@@ -426,9 +428,6 @@ int InputInt() {
     }
     return answer;
 }
-
-//fstream fin ("in.txt", ios::in);
-//fstream fout ("out.txt", ios::out);
 
 void Menu(FibonacciHeap FibHeap) {
     int choice, key, value;
@@ -465,7 +464,8 @@ void Menu(FibonacciHeap FibHeap) {
                 }
                 break;
             case 3:
-                cout << FibHeap.RemoveMin()->value;
+                node = FibHeap.RemoveMin();
+                cout << (node != nullptr ? to_string(node->value) :  "Heap is empty");
                 break;
 
             case 4:
@@ -500,8 +500,47 @@ void Menu(FibonacciHeap FibHeap) {
     }
 }
 
-int main() {
+
+void RuCode() {
     FibonacciHeap Fib = FibonacciHeap();
-    Menu(Fib);
+    string b;
+    int a;
+    while (cin >> b) {
+        if (b ==  "ADD") {
+            cin >> a;
+            Fib.Insert(a, a);
+        }
+        else if (b == "EXTRACT") {
+            Node* min = Fib.RemoveMin();
+            if (min != nullptr) {
+                cout << min->value << endl;
+            }
+            else cout << "CANNOT\n";
+        }
+        else if (b == "CLEAR") {
+            Fib = FibonacciHeap();
+        }
+    }
+    return;
+}
+
+
+int main() {
+    //FibonacciHeap::Dijkstra();
+//    ofstream cout("graph.txt");
+//    int n, m, a;
+//    cin >> n >> m >> a;
+//    cout << n << " " << m << " " << a << endl;
+//    for (int i = 0; i < m; ++i) {
+//        int f = 0, s = 0;
+//        while (f == s) {
+//            f = rand() % n + 1;
+//            s = rand() % n + 1;
+//        }
+//        cout << f << " " << s << " " << rand() % 100000 + 1 << endl;
+//    }
+
+    //FibonacciHeap::Dijkstra();
+    Menu(FibonacciHeap());
     return 0;
 }
