@@ -13,7 +13,7 @@ enum State {
 class Node;
 
 class Edge {
-public:    
+public:
     Node *tail;
     Node *head;
     int length;
