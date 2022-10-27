@@ -5,6 +5,7 @@
 #include <algorithm>
 using namespace std;
 #define INF INT_MAX
+const int MAX_DEGREE = 64;
 
 enum State {
     LABELED, UNLABELED, SCANNED
@@ -14,13 +15,11 @@ class Node;
 
 class Edge {
 public:
-    Node *tail;
-    Node *head;
-    int length;
+    Node* end;
+    double length;
 
-    Edge(Node *tail, Node *head, int length) {
-        this->tail = tail;
-        this->head = head;
+    Edge(Node* end, double length) {
+        this->end = end;
         this->length = length;
     }
 
@@ -28,37 +27,45 @@ public:
 
 class Node {
 public:
+
     friend class FibonacciHeap;
-    vector<Edge*> incoming_edges;
-    vector<Edge*> outgoing_edges;
-    Node *parent;
-    Node *left;
-    Node *right;
-    Node *child;
-    State state;
-public:
 
-    bool mark;
-    int value;
+    double value;
+
+    Node(double value, double key = 0) {
+        this->value = value;
+        this->key = key;
+        this->mark = false;
+        this->parent = nullptr;
+        this->child = nullptr;
+        this->left = this->right = this;
+        this->degree = 0;
+        this->state = UNLABELED;
+    }
+
+private:
+
+    double key;
     int degree;
-    int key;
+    bool mark;
 
-    void AddIncomingEdge(Edge *edge) {
-        incoming_edges.push_back(edge);
+    vector<Edge*> neighbours;
+    Node* parent;
+    Node* left;
+    Node* right;
+    Node* child;
+    State state;
+
+    void AddNeighbours(Edge* edge) {
+        neighbours.push_back(edge);
     }
-
-    void AddOutgoingEdge(Edge * edge) {
-        outgoing_edges.push_back(edge);
-    }
-
 };
 
-bool iter(Edge *a, Edge *b) {
-    return a->length < b->length;
-}
+
 
 class FibonacciHeap {
 private:
+    Node *min;
 
     void DeleteAll(Node *heap) {
         if (heap != nullptr) {
@@ -72,30 +79,18 @@ private:
         }
     }
 
-    static Node *MakeNode(int value, int key = 0) {
-        Node *new_node = new Node();
-        new_node->value = value;
-        new_node->key = key;
-        new_node->parent = nullptr;
-        new_node->child = nullptr;
-        new_node->left = new_node->right = new_node;
-        new_node->degree = 0;
-        new_node->state = UNLABELED;
-        return new_node;
-    }
-
-    Node* Merge(Node *first, Node *second) {
+    Node* Merge(Node* first, Node* second) {
         if (first == nullptr)
             return second;
+
         if (second == nullptr)
             return first;
-        if (first->key > second->key) {
-            Node* loc_elem = first;
-            first = second;
-            second = loc_elem;
-        }
-        Node *A = first->left;
-        Node *B = second->left;
+
+        if (first->key > second->key)
+            swap(first, second);
+
+        Node* A = first->left;
+        Node* B = second->left;
         A->right = second;
         second->left = A;
         first->left = B;
@@ -104,23 +99,23 @@ private:
     }
 
     Node *RemoveMin(Node *elem) {
-        if (elem == nullptr) {
+        if (elem == nullptr)
             return elem;
-        }
+
         UnMarkAll(elem->child);
-        if (elem == elem->right) {
+        if (elem == elem->right)
             elem = elem->child;
-        }
+
         else {
             elem->right->left = elem->left;
             elem->left->right = elem->right;
             elem = Merge(elem->right, elem->child);
         }
-        if (elem == nullptr) {
-            return elem;
-        }
 
-        vector<Node*> trees(64, nullptr);
+        if (elem == nullptr)
+            return elem;
+
+        vector<Node*> trees(MAX_DEGREE, nullptr);
         while (true) {
             if (trees[elem->degree] != nullptr) {
                 Node *loc_elem = trees[elem->degree];
@@ -154,11 +149,8 @@ private:
                 trees[elem->degree] = elem;
             }
             elem = elem->right;
-//            if (elem->key < min->key) {
-//                min = elem;
-//            }
         }
-        Node *min_elem = elem, *start = elem;
+        Node* min_elem = elem, *start = elem;
         do {
             if (elem->value < min_elem->value)
                 min_elem = elem;
@@ -167,10 +159,9 @@ private:
         return min_elem;
     }
 
-    Node* DecreaseKey(Node *heap, Node *elem, int key) {
-        if (elem->key < key) {
+    Node* DecreaseKey(Node *heap, Node *elem, double key) {
+        if (elem->key < key)
             return heap;
-        }
         elem->key = key;
         if (elem->parent != nullptr) {
             if (elem->key < elem->parent->key) {
@@ -183,9 +174,8 @@ private:
                     parent = elem->parent;
                     elem->parent = nullptr;
                 }
-                if (parent != nullptr && parent->parent != nullptr) {
+                if (parent != nullptr && parent->parent != nullptr)
                     parent->mark = true;
-                }
             }
         }
         else if (elem->key < heap->key)
@@ -194,28 +184,24 @@ private:
         return heap;
     }
 
-    Node* Find(Node *heap, int key) {
+    Node* Find(Node *heap, double key) {
         Node *loc_heap = heap;
-        if (loc_heap == nullptr) {
+        if (loc_heap == nullptr)
             return nullptr;
-        }
         do {
-            if (loc_heap->key == key) {
+            if (loc_heap->key == key)
                 return loc_heap;
-            }
             Node *result = Find(loc_heap->child, key);
-            if (result != nullptr) {
+            if (result != nullptr)
                 return result;
-            }
             loc_heap = loc_heap->right;
         } while (loc_heap != heap);
         return nullptr;
     }
 
     void UnMarkAll(Node* elem) {
-        if (elem == nullptr) {
+        if (elem == nullptr)
             return;
-        }
         Node *loc_elem = elem;
         do {
             loc_elem->mark = false;
@@ -224,17 +210,16 @@ private:
         } while (loc_elem != elem);
     }
 
-    void AddChild(Node *parent, Node *child) {
+    void AddChild(Node* parent, Node* child) {
         child->left = child->right = child;
         child->parent = parent;
         parent->degree++;
         parent->child = Merge(parent->child,child);
     }
 
-    Node* Cut(Node *heap, Node *elem)       {
-        if (elem->right == elem) {
+    Node* Cut(Node* heap, Node* elem)       {
+        if (elem->right == elem)
             elem->parent->child = nullptr;
-        }
         else {
             elem->right->left = elem->left;
             elem->left->right = elem->right;
@@ -246,7 +231,6 @@ private:
     }
 
 public:
-    Node *min;
 
     FibonacciHeap() {
         min = Empty();
@@ -256,7 +240,7 @@ public:
         DeleteAll(min);
     }
 
-    Node *Empty() {
+    Node* Empty() {
         return nullptr;
     }
 
@@ -268,31 +252,35 @@ public:
         return min;
     }
 
-    Node *Insert(int value, int key) {
-        Node *new_elem = MakeNode(value, key);
+    Node* Insert(double value, double key) {
+        Node *new_elem = new Node(value, key);
         min = Merge(min, new_elem);
         return new_elem;
     }
 
-    Node *Insert(Node *new_elem) {
+    Node *Insert(Node* new_elem) {
         min = Merge(min, new_elem);
         return new_elem;
     }
 
-    Node *Merge(FibonacciHeap other_heap) {
+    Node* Merge(const FibonacciHeap& other_heap) {
         return min = Merge(min, other_heap.min);
     }
 
-    Node *RemoveMin() {
+    Node* RemoveMin() {
         Node* old_min = min;
         min = RemoveMin(min);
         return old_min;
     }
 
-    Node *DecreaseKey(Node *elem, int value) {
+    Node* DecreaseKey(Node* elem, double value) {
         if (elem == nullptr)
             return elem;
         return min = DecreaseKey(min, elem, value);
+    }
+
+    Node* Find(double value) {
+        return Find(min, value);
     }
 
     void DisplayRoots() {
@@ -313,10 +301,6 @@ public:
         cout << endl;
     }
 
-    Node* Find(int value) {
-        return Find(min, value);
-    }
-
     static void Dijkstra() {
 
         int COUNT_TESTS = 9;
@@ -324,7 +308,7 @@ public:
         ofstream output("Tests\\out.txt");
         ifstream output_2("Tests\\out.txt");
 
-        for (int number_test = 1; number_test <= 9; ++number_test) {
+        for (int number_test = 1; number_test <= 1; ++number_test) {
             input.open("Tests\\input\\in" + to_string(number_test) + ".txt");
             answer.open("Tests\\answer\\ans"  + to_string(number_test) + ".txt");
 
@@ -335,57 +319,46 @@ public:
             vector<Edge*> edges(count_edge);
 
             for (int i = 1; i <= count_vertexes; ++i) {
-                vertices[i] = (MakeNode(i, INF));
+                vertices[i] = new Node(i, INF);
             }
-
-
 
             vertices[start]->key = 0;
             for (int i = 0; i < count_edge; ++i) {
                 input >> tail >> head >> length;
-                Edge* edge = new Edge(vertices[tail], vertices[head], length);
-                edge->tail->AddOutgoingEdge(edge);
-                edge->head->AddIncomingEdge(edge);
+                Edge* edge = new Edge(vertices[head], length);
+                vertices[tail]->AddNeighbours(edge);
                 edges[i] = edge;
             }
 
             vertices[start]->state = LABELED;
             FibonacciHeap FibHeap =  FibonacciHeap();
-
             FibHeap.Insert(vertices[start]);
-
-            for (int i = 1; i < vertices.size(); ++i) {
-                sort(vertices[i]->incoming_edges.begin(), vertices[i]->incoming_edges.end(), iter);
-                sort(vertices[i]->outgoing_edges.begin(), vertices[i]->outgoing_edges.end(), iter);
-            }
 
             do {
                 Node* v = FibHeap.RemoveMin();
                 v->state = SCANNED;
-                for (int i = 0; i < v->outgoing_edges.size(); i++) {
-                    Edge* currentEdge = v->outgoing_edges[i];
-                    Node* headOfCurrentEdge = currentEdge->head;
-
-                    if (headOfCurrentEdge->state == SCANNED) {
+                for (int i = 0; i < v->neighbours.size(); i++) {
+                    Edge* currentEdge = v->neighbours[i];
+                    Node* neighb = currentEdge->end;
+                    if (neighb->state == SCANNED)
                         continue;
+                    if (neighb->state == UNLABELED) {
+                        neighb->state = LABELED;
+                        neighb->key = v->key + currentEdge->length;
+                        FibHeap.Insert(neighb);
                     }
-                    if (headOfCurrentEdge->state == UNLABELED) {
-                        headOfCurrentEdge->state = LABELED;
-                        headOfCurrentEdge->key = v->key + currentEdge->length;
-                        FibHeap.Insert(headOfCurrentEdge);
+                    else if (neighb->key > v->key + currentEdge->length) {
+                        cout << neighb->value << ": " << neighb->key << endl;
+                        FibHeap.DecreaseKey(neighb, v->key + currentEdge->length);
                     }
-                    else if (headOfCurrentEdge->key > v->key + currentEdge->length) {
-                        FibHeap.DecreaseKey(headOfCurrentEdge, v->key + currentEdge->length);
-                    }
-                    vertices[v->value] = v;
+                    vertices[v->value]->value = v->value;
                 }
             }
             while(!FibHeap.isEmpty());
 
             for (int i = 1; i < vertices.size(); ++i) {
-                if (vertices[i]->key != 2147483647) {
+                if (vertices[i]->key != INF)
                     output << vertices[i]->key << " ";
-                }
                 else output << "-1 ";
             }
             output << endl;
@@ -526,21 +499,7 @@ void RuCode() {
 
 
 int main() {
-    //FibonacciHeap::Dijkstra();
-//    ofstream cout("graph.txt");
-//    int n, m, a;
-//    cin >> n >> m >> a;
-//    cout << n << " " << m << " " << a << endl;
-//    for (int i = 0; i < m; ++i) {
-//        int f = 0, s = 0;
-//        while (f == s) {
-//            f = rand() % n + 1;
-//            s = rand() % n + 1;
-//        }
-//        cout << f << " " << s << " " << rand() % 100000 + 1 << endl;
-//    }
-
-    //FibonacciHeap::Dijkstra();
-    Menu(FibonacciHeap());
+    FibonacciHeap::Dijkstra();
+    //Menu(FibonacciHeap());
     return 0;
 }
