@@ -117,7 +117,7 @@ public:
             ofstream fout("output.txt");
             indat >> n;
             indat >> m;
-            indat >> x;
+            indat >> x; 
             vector<Node*> vertices(n + 1);
             for(int j=1; j <= n; j++) {
                 Node* v = new Node(j, INF);
