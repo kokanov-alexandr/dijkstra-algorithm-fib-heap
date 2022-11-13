@@ -325,16 +325,8 @@ $$F_n=F_{n-1}+F_{n-2}=1+\sum_{i=0}^{n-3}F_i+F_{n-2}=1+\sum_{i=0}^{n-2}F_i$$
 пусть $s_n$ — минимальный размер фибоначчиева дерева порядка $n$.
 
 База: 
-$$\begin{equation*}
- \begin{cases}
-   n=0,s_0=1>F_0, 
-   \\
-   n=1,s_1=1=F_1.
- \end{cases}
-\end{equation*}
-$$
+$$\begin{equation*}\begin{cases}n=0,s_0=1>F_0,\\n=1,s_1=1=F_1.\end{cases}\end{equation*}$$
 
- 
 Переход:
 $$s_n=1+\sum_{i=0}^{n-2}s_i\ge1+\sum_{i=0}^{n-2}F_i\ge F_n$$
 
