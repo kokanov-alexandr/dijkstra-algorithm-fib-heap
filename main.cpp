@@ -8,7 +8,7 @@ using namespace std;
 using namespace chrono;
 
 const int MAX_DEGREE = 64;
-
+      
 enum State {
     LABELED, UNLABELED, SCANNED
 };
