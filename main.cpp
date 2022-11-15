@@ -8,7 +8,7 @@ using namespace std;
 using namespace chrono;
 
 const int MAX_DEGREE = 64;
-      
+const int COUNT_TESTS = 17;
 enum State {
     LABELED, UNLABELED, SCANNED
 };
@@ -109,8 +109,8 @@ public:
     }
 
     static void Dijkstra() {
-        auto start = high_resolution_clock::now();
-        for (int test = 1; test <= 15; ++test) {
+        clock_t start = clock();
+        for (int test = 1; test <= COUNT_TESTS; ++test) {
             string file_name2 = "../Tests\\input\\in" + to_string(test) + ".txt";
             int n, m, x;
             ifstream indat(file_name2);
@@ -156,9 +156,7 @@ public:
                 }
             }
 
-            auto stop = high_resolution_clock::now();
-
-
+            clock_t stop = clock();
 
             for (int i = 1; i < vertices.size(); ++i) {
                 if (vertices[i]->key == INT_MAX) {
@@ -183,11 +181,10 @@ public:
                 }
             }
 
-            cout << test << ") ";
+            cout <<  "Test" << " " << test << ": ";
             if (is_ok){
                 cout << "OK" << endl;
-                auto duration = duration_cast<microseconds>(stop - start);
-                cout << "Time taken by function: "<< duration.count() << " microseconds" << endl;
+                cout << "time: "<< (double)(stop - start) / CLOCKS_PER_SEC << " seconds" << endl;
             }
             else cout << "ERROR" << endl;
         }
@@ -224,7 +221,7 @@ private:
     void UnMarkAll(Node* elem) {
         if (elem == nullptr)
             return;
-        Node* loc_elem=elem;
+        Node* loc_elem = elem;
         do {
             loc_elem->mark = false;
             loc_elem->parent = nullptr;
