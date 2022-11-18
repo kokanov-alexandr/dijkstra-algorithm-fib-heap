@@ -4,12 +4,9 @@
 #include "FibonacciHeap.cpp"
 
 #define INF INT_MAX
-
 using namespace std;
-
 const int COUNT_TESTS = 30;
 
-   
 pair<vector<Node<int, int>*>, int> ScanGraphDijkstra(string inFileName) {
     int n, m, x;
     ifstream input(inFileName);
@@ -33,7 +30,7 @@ pair<vector<Node<int, int>*>, int> ScanGraphDijkstra(string inFileName) {
 void Dijkstra() {
     for (int test = 1; test <= COUNT_TESTS; ++test) {
         clock_t start = clock();
-        auto Graph = ScanGraphDijkstra("../Tests\\input\\in" + to_string(test) + ".txt");
+        auto Graph = ScanGraphDijkstra("../Tests/input/in" + to_string(test) + ".txt");
         ofstream output("output.txt");
         int start_vertex = Graph.second;
         vector<Node<int, int>*> vertices = Graph.first;
@@ -68,7 +65,7 @@ void Dijkstra() {
             }
             else output << vertices[i]->key << " ";
         }
-        string file_name = "../Tests\\answer\\ans" + to_string(test) + ".txt";
+        string file_name = "../Tests/answer/ans" + to_string(test) + ".txt";
         ifstream ans(file_name);
         vector<int> answers(vertices.size());
         for (int i = 1; i < answers.size(); ++i) {
@@ -81,7 +78,6 @@ void Dijkstra() {
                 break;
             }
         }
-
         cout << "Test " << test << ": ";
         if (is_ok) {
             cout << "OK ";
